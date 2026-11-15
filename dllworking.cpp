@@ -1,28 +1,28 @@
 #if 0
-/* ============================================================
-   Menu/troll DLL para MTA:SA (client) - d3d9 + ImGui (dx9/win32)
-   Versao: 2026-11-12 (build 3)
+ 
 
-   MENU: janela 650x440, tema preto, cards com fundo transparente e
-   contorno vermelho de 1px, sidebar de abas na esquerda, cursor
-   desenhado por nos quando o menu esta aberto, fontes/espacamento
-   reduzidos e cards 30px mais estreitos / 50px mais curtos.
 
-   ABAS:
-     COMBAT   Aimbot (fov, smooth, bone, keybind) e Silent Aim
-              (fov, bone, ignore walls; so dispara com o bind).
-     VISUALS  ESP por jogador (box, skeleton, nome, distancia, cor);
-              amigo aparece em azul com estrela e e ignorado por
-              aimbot/silent.
-     MISC     Stream proof, bind do menu, add/remove friend,
-              config save/load.
-     TROLL    Fly (toggle no card: bind, velocity 0.5..100,
-              Hold/Toggle, movimento nivelado) e Infinite Ammo.
 
-   BINDINGS PADRAO: menu Insert | Fly F8 | Aimbot Mouse4 | Silent
-   Mouse5. F8 > quit fecha limpo (netc intocado).
-   Logs no mta.log por tag (fps/esp/fly/silent/...) com throttle.
-   ============================================================ */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #endif
 
 #define WIN32_LEAN_AND_MEAN
@@ -133,17 +133,17 @@ static bool __cdecl d_advanced_memory_validator(int, int, int, DWORD*, int*, DWO
 static int  __fastcall d_network_packet_state_validator(DWORD*, void*, int, unsigned __int8, unsigned __int16) { return 1; }
 static char __stdcall  d_animation_packet_validator(int*) { return 1; }
 
-// FIX: rastreia último pacote enviado. Serve como sinal REAL de conexão — o ped
-// local pode ficar "vivo" 1-2s após disconnect (MTA destrói assincronamente),
-// mas os pacotes param IMEDIATAMENTE. Sem isso, ESP/FOV renderizam contra um
-// mundo morto durante toda a janela de transição. Precisa estar declarado
-// ANTES de d_send_packet (que alimenta o tick) e de session_monitor (que lê).
+
+
+
+
+
 static volatile LONG g_last_pkt_tick = 0;
 
 static bool __fastcall d_send_packet(void* ECX, void* EDX, unsigned char ucPacketID, void* bitStream,
                                      int packetPriority, int packetReliability, int packetOrdering) {
-    // FIX ban: durante shutdown deixa o quit-packet sair para evitar timeout
-    // no servidor (interpretado como combat-log em servidores competitivos).
+    
+    
     if (is_shutdown_bypass()) {
         if (g_o_send_packet)
             return g_o_send_packet(ECX, EDX, ucPacketID, bitStream,
@@ -151,7 +151,7 @@ static bool __fastcall d_send_packet(void* ECX, void* EDX, unsigned char ucPacke
         return false;
     }
 
-    // FIX: registrar atividade de pacote (ver Fix C em session_monitor).
+    
     {
         uint32_t pkt_now = GetTickCount();
         InterlockedExchange(&g_last_pkt_tick, pkt_now ? pkt_now : 1);
@@ -282,9 +282,9 @@ static volatile LONG g_watchdog_repatch_count = 0;
 template<typename T>
 static bool patch_jmp(void* addr, T detour, T& original_out) {
     if (!addr || !detour) return false;
-    // FIX OOM: recusar antes de alocar trampolim se não há slot para registrar.
-    // Antes, o patch era instalado mesmo com tabela cheia → trampolim órfão
-    // (VirtualAlloc 4KB/instância) + hook irreversível.
+    
+    
+    
     if (g_patch_count >= 96) return false;
 
     T tramp = skip_hook::make_full_hook<T>((uint64_t)addr, 5);
@@ -312,11 +312,11 @@ static bool patch_jmp(void* addr, T detour, T& original_out) {
 
 static bool patch_in_netc(uint32_t a);
 static void unpatch_all() {
-    // FIX crash no FreeLibrary: ao contrário do quit_hard_restore (usado no exit
-    // do processo, quando o SO cuida do teardown), aqui a DLL pode ser descarregada
-    // com o processo VIVO. Se pularmos as hooks em netc.dll, os JMPs ficam
-    // apontando para detours desta DLL (que será desmapeada) → crash na
-    // próxima chamada (ex.: d_send_packet no próximo MOD_*). Restaurar TODAS.
+    
+    
+    
+    
+    
     for (int i = 0; i < g_patch_count; ++i) {
         __try {
             DWORD old = 0;
@@ -1386,11 +1386,11 @@ static const CfgEntry CFG_ENTRIES[] = {
     { "misc.flyspeed",        &g_fly_speed,            CFG_FLOAT },
     { "misc.flymode",         &g_fly_mode,            CFG_INT   },
     { "misc.streamproof",     &g_stream_proof,         CFG_BOOL  },
-    // FIX: entra no snapshot/restore. Antes ficava ON permanentemente
-    // (não era tocado por sess_disable_all) e a escrita por frame em
-    // weapon+slot continuava mesmo após disconnect. Sintoma reportado:
-    // "as coisas não" quando o usuário reentra — na verdade era a ammo
-    // sendo reescrita sem a sessão viva.
+    
+    
+    
+    
+    
     { "troll.ammo",           &g_infinite_ammo,        CFG_BOOL  },
 };
 static const int CFG_ENTRY_COUNT = (int)(sizeof(CFG_ENTRIES) / sizeof(CFG_ENTRIES[0]));
@@ -4262,9 +4262,9 @@ static int mta_refresh_player_names() {
         g_mta_name_vec.end   = g_mta_name_vec.first + sizeof(g_mta_name_storage);
         g_mta_name_vec_inited = true;
     }
-    // FIX OOM: resetar .last SEMPRE. Sem isso, GetPlayerNames appenda em .last
-    // cumulativamente → .last > .end → escrita fora de g_mta_name_storage
-    // (8 KB) → corrupção de heap adjacente (aparece como "out of memory").
+    
+    
+    
     g_mta_name_vec.last = g_mta_name_vec.first;
 
     typedef void (__thiscall* MtaGetNamesFn)(void*, void*);
@@ -5252,9 +5252,9 @@ static void draw_esp_for_ped(IDirect3DDevice9* dev, uint32_t ped, bool is_local,
 
 static void draw_esp_all_players(IDirect3DDevice9* dev) {
     if (InterlockedCompareExchange(&g_shutdown_all, 0, 0)) return;
-    // FIX: ESP morre IMEDIATAMENTE no disconnect. Sem isso, session_fail_closed
-    // seta g_session_live=0 mas o render continua por ate 1600ms (threshold de
-    // estabilidade), desenhando caixas no loading screen / browser de servidor.
+    
+    
+    
     if (!session_live()) return;
     if (!g_esp_local_enable && !g_esp_players_enable) return;
 
@@ -5371,7 +5371,7 @@ static ImVec2 get_gta_sa_crosshair(const ImVec2& display) {
 }
 
 static void draw_aimbot_fov() {
-    if (!session_live()) return;  // FIX: FOV morre no disconnect (igual ESP)
+    if (!session_live()) return;  
     if (!g_aimbot_enable || !g_aimbot_show_fov) return;
 
     ImGuiIO& io = ImGui::GetIO();
@@ -5405,7 +5405,7 @@ static float silent_effective_fov() {
 }
 
 static void draw_silent_fov() {
-    if (!session_live()) return;  // FIX: FOV morre no disconnect (igual ESP)
+    if (!session_live()) return;  
     if (!g_silent_enable || !g_silent_show_fov) return;
     ImGuiIO& io = ImGui::GetIO();
     ImVec2 c = get_gta_sa_crosshair(io.DisplaySize);
@@ -5745,10 +5745,10 @@ static void silent_retire_hooks() {
         } __except (EXCEPTION_EXECUTE_HANDLER) { }
     }
     g_patch_count = w;
-    // FIX OOM: NÃO zerar g_o_FireInstantHit. O trampolim aponta para código
-    // original válido (5 bytes copiados no install inicial) — pode ser reusado
-    // indefinidamente. Zerar forçava reinstalação a cada retire(), que alocava
-    // um novo trampolim VirtualAlloc(4KB) → leak massivo com packet 33 (sync).
+    
+    
+    
+    
     g_o_mta_fire_mid = nullptr;
     g_o_mta_sniper_mid = nullptr;
     g_silent_hook_ok = false;
@@ -5774,8 +5774,8 @@ static void silent_install_hook() {
         }
     } __except (EXCEPTION_EXECUTE_HANDLER) { return; }
 
-    // FIX OOM: se já temos trampolim cacheado (g_o_FireInstantHit != nullptr),
-    // reinstala o JMP SEM alocar outro trampolim. Só atualiza o slice do patch.
+    
+    
     if (g_o_FireInstantHit) {
         uint8_t saved[5] = {};
         DWORD old = 0;
@@ -5801,7 +5801,7 @@ static void silent_install_hook() {
         mta_logf("silent", "falha ao reusar trampolim; caindo para fresh install");
     }
 
-    // Fresh install (só ocorre no boot ou se o cache foi zerado)
+    
     fn_fire_instant_hit tramp = nullptr;
     if (patch_jmp((void*)(uintptr_t)SILENT_FIRE_INSTANT_HIT,
                   reinterpret_cast<fn_fire_instant_hit>(&hk_fire_instant_hit), tramp)) {
@@ -6075,13 +6075,13 @@ static bool sess_probe() {
 static void sess_disable_all() {
     if (g_sess_saved) return;
     fly_physics_end();
-    // FIX: encerra troll (camera spectate no ped do servidor antigo e fogo ativo
-    // sao invalidos no novo server; antes ficavam grudados ate o proximo WM_CLOSE).
+    
+    
     troll_spectate_stop();
     troll_fire_stop();
-    // FIX: g_infinite_ammo tambem precisa desligar no disconnect. Antes ficava
-    // ON permanentemente (nao estava em CFG_ENTRIES, logo sess_disable_all
-    // nao o tocava, e a escrita por frame em weapon+slot continuava).
+    
+    
+    
     g_infinite_ammo = false;
     g_ammo_logged = false;
     g_silent_aim_on = g_silent_has_target = false;
@@ -6190,11 +6190,11 @@ static void session_monitor() {
     g_sess_tick = now ? now : 1;
     bool active = sess_probe();
 
-    // FIX: além do ped local, exigir tráfego recente de pacotes. O ped local
-    // sobrevive 1-2s após disconnect (MTA destrói de forma assíncrona), mas
-    // os packets param no mesmo frame da desconexão. Sem este check,
-    // active=true durante a transição → ESP/FOV renderizam contra mundo morto.
-    // 1500ms é folgado o suficiente para sobreviver a lag spikes.
+    
+    
+    
+    
+    
     if (active) {
         uint32_t lp = (uint32_t)InterlockedCompareExchange(&g_last_pkt_tick, 0, 0);
         if (lp && (now - lp) > 1500) active = false;
@@ -6205,11 +6205,11 @@ static void session_monitor() {
     bool quarantined = g_quarantine_until &&
         (now - g_quarantine_until < RECONNECT_QUARANTINE_MS);
 
-    // FIX: era >=8 (1.6s). sess_restore_all já roda em >=2, mas session_live()
-    // só ficava true em >=8 — janela de 1.2s onde ImGui mostrava ON mas nada
-    // renderizava. >=2 (400ms) filtra glitch de 1 amostra e ativa quase junto
-    // com o restore. O gate real contra detecção AC continua sendo
-    // conn_handshake_active() (2.5s de silêncio pós-conexão).
+    
+    
+    
+    
+    
     bool live = active && !conn_handshake_active() && !quarantined &&
         !g_sess_saved && g_netc_base && g_sess_stable >= 2 &&
         !InterlockedCompareExchange(&g_emergency_done, 0, 0);
@@ -6235,11 +6235,11 @@ static void session_monitor() {
         silent_retire_hooks();
         g_silent_capturing = false;
 
-        // FIX: desligar features JÁ no frame de transição. Antes, esperava
-        // g_sess_stable>=2 (~400ms) para sess_disable_all rodar — nesse
-        // intervalo ESP/FOV continuavam renderizando, e o snapshot podia
-        // capturar estado incorreto se o usuário tocasse em toggles.
-        // Snapshot agora reflete o estado REAL in-game (antes do disable).
+        
+        
+        
+        
+        
         if (!g_sess_saved) sess_disable_all();
 
         mta_logf("conn", "desconectado: features OFF imediato, silent hooks restaurados");
@@ -6258,11 +6258,11 @@ static void session_monitor() {
             return;
         }
     } else g_sess_lost = 0;
-    // FIX: era 8 probes (1600ms). Isso deixava features visiveis por 1.6s apos
-    // o disconnect e fazia trocas rapidas de servidor (< 1.6s sem ped) nao
-    // dispararem sess_disable_all (log 19:30:24 mostra ped trocando sem
-    // disconnect registrado). 2 probes = 400ms: filtra falso-positivo de 1
-    // sample (hiccup de rede) mas e praticamente instantaneo pro usuario.
+    
+    
+    
+    
+    
     if (g_sess_stable < 2) return;
     int want = active ? 1 : 2; 	
     g_sess_state = want;
